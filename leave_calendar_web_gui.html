@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TMTlabs Leave Calendar</title>
+    <style>
+        /* Base styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #daedf7;
+        }
+
+        .calendar-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        /* Header styles */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-button {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .nav-button:hover {
+            background: #0056b3;
+        }
+
+        /* Table styles */
+        .scrollable-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border: 1px solid #dee2e6;
+            width: 14.28%;
+            height: 180px;
+            position: relative;
+            padding: 0;
+            vertical-align: top;
+            background: white;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+            padding: 10px;
+            height: auto;
+        }
+
+        /* Cell contents */
+        .date-cell {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 5px;
+        }
+
+        .date-number {
+            position: sticky;
+            top: 0;
+            background: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-bottom: 5px;
+            z-index: 2;
+            font-weight: bold;
+        }
+
+        .employees-on-leave {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 0 5px;
+            margin: 5px 0 25px 0;
+        }
+
+        /* Category styles */
+        .category-section {
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .category-header {
+            background: #e9ecef;
+            padding: 4px 8px;
+            font-weight: bold;
+            font-size: 0.85em;
+            color: #495057;
+        }
+
+        .category-employees {
+            padding: 4px;
+        }
+
+        /* Employee tag styles */
+        .employee-tag {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            margin: 3px 0;
+            padding: 4px 8px;
+            font-size: 0.85em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .employee-tag:hover {
+            background: #f8f9fa;
+        }
+
+        .employee-info {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-grow: 1;
+        }
+
+        .employee-name {
+            flex-grow: 1;
+        }
+
+        .leave-type {
+            font-size: 0.85em;
+            color: #6c757d;
+            padding: 2px 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            margin-left: 4px;
+        }
+
+        .employee-notes {
+            color: #6c757d;
+            cursor: pointer;
+        }
+
+        .cancel-leave-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            padding: 0 4px;
+            font-size: 1em;
+            opacity: 0.7;
+        }
+
+        .cancel-leave-btn:hover {
+            opacity: 1;
+        }
+
+        .add-leave-btn {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 2;
+        }
+
+        .add-leave-btn:hover {
+            background: #218838;
+            transform: scale(1.1);
+            transition: all 0.2s ease;
+        }
+
+        /* Dialog styles */
+        .leave-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .dialog-content {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 300px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .dialog-content h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        /* Select and input styles */
+        .dialog-content select {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: white;
+            cursor: pointer;
+            appearance: auto;
+            -webkit-appearance: menulist;
+        }
+
+        .dialog-content select:focus {
+            outline: none;
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+
+        .dialog-content select option {
+            padding: 8px;
+        }
+
+        .dialog-content select optgroup {
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .dialog-content textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+            box-sizing: border-box;
+        }
+
+        .dialog-content textarea:focus {
+            outline: none;
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+
+        .dialog-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .dialog-buttons button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        #confirmLeave, #saveNotes {
+            background: #28a745;
+            color: white;
+        }
+
+        #confirmLeave:hover, #saveNotes:hover {
+            background: #218838;
+        }
+
+        #cancelLeave, #cancelNotes {
+            background: #dc3545;
+            color: white;
+        }
+
+        #cancelLeave:hover, #cancelNotes:hover {
+            background: #c82333;
+        }
+
+        /* Day details dialog */
+        .day-details-dialog {
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .day-detail-category {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .day-detail-category h4 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+
+        .day-detail-employee {
+            background: white;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+
+        .day-detail-notes {
+            margin-top: 5px;
+            padding: 5px;
+            background: #f8f9fa;
+            border-radius: 3px;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        /* Calendar actions */
+        .calendar-actions {
+            display: flex;
+            gap: 10px;
+            margin-left: 20px;
+        }
+
+        .action-button {
+            padding: 8px 16px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .action-button:hover {
+            background: #5a6268;
+        }
+
+        #importFile {
+            display: none;
+        }
+
+        .view-day-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #17a2b8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 0.8em;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .view-day-btn:hover {
+            background: #138496;
+        }
+
+        /* Scrollbar styles */
+        .employees-on-leave::-webkit-scrollbar,
+        .dialog-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .employees-on-leave::-webkit-scrollbar-track,
+        .dialog-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .employees-on-leave::-webkit-scrollbar-thumb,
+        .dialog-content::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .calendar-container {
+                padding: 10px;
+            }
+
+            th, td {
+                height: 150px;
+            }
+
+            .employee-tag {
+                font-size: 0.75em;
+            }
+
+            .dialog-content {
+                width: 95%;
+                margin: 10px;
+                max-height: 90vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <h1 id="leaveMonth"></h1>
+            <div class="calendar-nav">
+                <button id="prevMonth" class="nav-button">Previous Month</button>
+                <button id="nextMonth" class="nav-button">Next Month</button>
+                <div class="calendar-actions">
+                    <button id="exportData" class="action-button">Export Data</button>
+                    <button id="importData" class="action-button">Import Data</button>
+                    <input type="file" id="importFile" accept=".json">
+                </div>
+            </div>
+        </div>
+        <table id="monthTable" class="scrollable-table">
+            <tr>
+                <th>Sunday</th>
+                <th>Monday</th>
+                <th>Tuesday</th>
+                <th>Wednesday</th>
+                <th>Thursday</th>
+                <th>Friday</th>
+                <th>Saturday</th>
+            </tr>
+        </table>
+    </div>    <script src="javascript_for_leave_calendar.js"></script>
+</body>
+</html>
